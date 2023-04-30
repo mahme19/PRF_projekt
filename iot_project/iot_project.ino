@@ -1,6 +1,8 @@
 //#include <SPI.h>
 //#include <WiFiNINA.h>
 //#include <WiFiUdp.h>
+#include <AccelStepper.h>
+
 
 //the initial wifi status
 //int status = WL_IDLE_STATUS;
@@ -20,25 +22,39 @@ int localPort = 3002;
 int serverPort = 3001;       
 
 
+#define STEPPER_PIN_1 9
+#define STEPPER_PIN_2 10
+#define STEPPER_PIN_3 11
+#define STEPPER_PIN_4 12
+int step_number = 3;
+
+
 
 // LED pins
 const int ledPin = 6;
 const int ledPin2 = 7;
 
+// LDR sensor pin
 
+const int sensorPin = A0;
 
-
+int sensorValue = 0;
 
 
 void setup() {
   // put your setup code here, to run once:
 
-
-
-
+ 
+  
   pinMode(ledPin, OUTPUT);
   pinMode(ledPin2, OUTPUT);
   
+  pinMode(STEPPER_PIN_1, OUTPUT);
+  pinMode(STEPPER_PIN_2, OUTPUT);
+  pinMode(STEPPER_PIN_3, OUTPUT);
+  pinMode(STEPPER_PIN_4, OUTPUT);
+
+
   Serial.begin(9600);
 
   /*while (!Serial);
@@ -73,8 +89,18 @@ void setup() {
  
 }
 
+
 void loop() {
-  // put your main code here, to run repeatedly:
+  // put your main code here, to run repeatedly:åå
+  OneStep(true);
+  delay(10);
+
+/*
+
+  sensorValue = analogRead(sensorPin);
+  Serial.println(sensorValue);
+
+
   analogWrite(ledPin, 0);
   analogWrite(ledPin2, 0);
 
@@ -82,7 +108,7 @@ void loop() {
   Serial.println("OFF");
   delay(2000);
 
-  analogWrite(ledPin, 1);
+  analogWrite(ledPin, 5);
   Serial.println("ON 160 ");
 
   delay(2000);
@@ -90,7 +116,10 @@ void loop() {
   analogWrite(ledPin, 255);
   Serial.println("ON 255");
   delay(2000);
+  */
 }
+
+
 
 
 //listens for incoming UDP messages
@@ -126,3 +155,66 @@ void listenForUDPMessage() {
   
 }
 */
+
+void OneStep(bool dir){
+    if(dir){
+switch(step_number){
+  case 0:
+  digitalWrite(STEPPER_PIN_1, HIGH);
+  digitalWrite(STEPPER_PIN_2, LOW);
+  digitalWrite(STEPPER_PIN_3, LOW);
+  digitalWrite(STEPPER_PIN_4, LOW);
+  break;
+  case 1:
+  digitalWrite(STEPPER_PIN_1, LOW);
+  digitalWrite(STEPPER_PIN_2, HIGH);
+  digitalWrite(STEPPER_PIN_3, LOW);
+  digitalWrite(STEPPER_PIN_4, LOW);
+  break;
+  case 2:
+  digitalWrite(STEPPER_PIN_1, LOW);
+  digitalWrite(STEPPER_PIN_2, LOW);
+  digitalWrite(STEPPER_PIN_3, HIGH);
+  digitalWrite(STEPPER_PIN_4, LOW);
+  break;
+  case 3:
+  digitalWrite(STEPPER_PIN_1, LOW);
+  digitalWrite(STEPPER_PIN_2, LOW);
+  digitalWrite(STEPPER_PIN_3, LOW);
+  digitalWrite(STEPPER_PIN_4, HIGH);
+  break;
+} 
+  }else{
+    switch(step_number){
+  case 0:
+  digitalWrite(STEPPER_PIN_1, LOW);
+  digitalWrite(STEPPER_PIN_2, LOW);
+  digitalWrite(STEPPER_PIN_3, LOW);
+  digitalWrite(STEPPER_PIN_4, HIGH);
+  break;
+  case 1:
+  digitalWrite(STEPPER_PIN_1, LOW);
+  digitalWrite(STEPPER_PIN_2, LOW);
+  digitalWrite(STEPPER_PIN_3, HIGH);
+  digitalWrite(STEPPER_PIN_4, LOW);
+  break;
+  case 2:
+  digitalWrite(STEPPER_PIN_1, LOW);
+  digitalWrite(STEPPER_PIN_2, HIGH);
+  digitalWrite(STEPPER_PIN_3, LOW);
+  digitalWrite(STEPPER_PIN_4, LOW);
+  break;
+  case 3:
+  digitalWrite(STEPPER_PIN_1, HIGH);
+  digitalWrite(STEPPER_PIN_2, LOW);
+  digitalWrite(STEPPER_PIN_3, LOW);
+  digitalWrite(STEPPER_PIN_4, LOW);
+ 
+  
+} 
+  }
+step_number++;
+  if(step_number > 3){
+    step_number = 0;
+  }
+}
