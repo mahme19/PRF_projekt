@@ -36,7 +36,6 @@ Stepper myStepper = Stepper(stepsPerRevolution, 8, 9, 10, 11);
 
 // LED pins
 const int ledPin = 6;
-const int ledPin2 = 7;
 
 int i = 0;
 
@@ -45,6 +44,8 @@ int i = 0;
 const int sensorPin = A0;
 
 int sensorValue = 0;
+
+int lightValue = 0;
 
 String latestCommand = "";
 
@@ -58,7 +59,6 @@ void setup() {
 
   
   pinMode(ledPin, OUTPUT);
-  pinMode(ledPin2, OUTPUT);
   
  // pinMode(STEPPER_PIN_1, OUTPUT);
 //  pinMode(STEPPER_PIN_2, OUTPUT);
@@ -119,12 +119,12 @@ void loop() {
 
 /*
 
-  sensorValue = analogRead(sensorPin);
+  updateSensor();
   Serial.println(sensorValue);
 
 
   analogWrite(ledPin, 0);
-  analogWrite(ledPin2, 0);
+  
 
 
   Serial.println("OFF");
@@ -240,4 +240,38 @@ void setLightning(String command) {
 
 int readSensorPin(){
   return analogRead(sensorPin);
+}
+
+// METHODS FOR DIMMING AND BRIGHTEN
+void brightenTo(int desired) {
+  int preSensorValue = readSensorPin();
+
+  // curtains up
+  myStepper.step(10*stepsPerRevolution);
+  
+  int postSensorValue = readSensorPin();
+
+  // Only runs if the curtains has an effect
+  if ((postSensorValue - preSensorValue) > 30 ) {
+    while (sensorValue < desired && stepCount < [upperbound]) {
+      updateSensor();
+      myStepper.step(10*stepsPerRevolution);
+    }
+  }
+  
+  while (sensorValue < desired && lightValue < 255) {
+    updateSensor();
+    changeLight(lightValue+10)
+  }
+}
+
+// Run this
+void updateSensor() {
+  sensorValue = analogRead(sensorPin);
+}
+
+// Alle steder hvor lys ændres, skal være her
+void changeLight(int value) {
+  analogWrite(ledPin, value);
+  lightValue = value;
 }
