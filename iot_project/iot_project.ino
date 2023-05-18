@@ -1,11 +1,11 @@
 //#include <SPI.h>
-#include <WiFiNINA.h>
 #include <WiFiUdp.h>
 #include <Stepper.h>
+#include <EEPROM.h>
 
 
 //the initial wifi status
-int status = WL_IDLE_STATUS;
+//int status = WL_IDLE_STATUS;
 
 //WiFiUDP object used for the communication
 WiFiUDP Udp;
@@ -40,33 +40,31 @@ const int ledPin = 6;
 int i = 0;
 
 // LDR sensor pin
-
 const int sensorPin = A0;
-
 int sensorValue = 0;
 
 int lightValue = 0;
 
 String latestCommand = "";
 
-int stepCount = 0;         // number of steps the motor has taken
-
-
+int stepCount = 0; // number of steps the motor has taken
+int curtainUpperbound = 9000;
+int curtainLowerbound = 0;
 
 void setup() {
-  // put your setup code here, to run once:
-
-
-  
+  analogWrite(ledPin, 0);
+  delay(500);
+  // put your setup code here, to run once:  
   pinMode(ledPin, OUTPUT);
   
- // pinMode(STEPPER_PIN_1, OUTPUT);
-//  pinMode(STEPPER_PIN_2, OUTPUT);
+  // pinMode(STEPPER_PIN_1, OUTPUT);
+  // pinMode(STEPPER_PIN_2, OUTPUT);
   // pinMode(STEPPER_PIN_3, OUTPUT);
   // pinMode(STEPPER_PIN_4, OUTPUT);
 
-    myStepper.setSpeed(60);
+  myStepper.setSpeed(100);
 
+  stepCount = readFromEEPROM().toInt();
 
   Serial.begin(9600);
 /*
@@ -105,9 +103,6 @@ void setup() {
 
 void loop() {
 
-  int sensorVal = readSensorPin();
-  Serial.println(sensorVal);
-
   //analogWrite(ledPin, 255);
 
   //setLightning("total_darkness");
@@ -140,20 +135,27 @@ void loop() {
   delay(2000);
   */
  
+  // Positiv step = op | Negativ step = ned
   
 
-/* if(i < 4){
-    Serial.println("clockwise");
-    myStepper.step(stepsPerRevolution );
-    delay(2000);
+  if(i < 1){
+    Serial.println("Lighten to 800");
+    Serial.println("before");
+    Serial.println(sensorValue);
+    brightenTo(800);
+    Serial.println("after");
+    Serial.println(sensorValue);
+
+    delay(5000);
+    Serial.println("Dim to 100");
+    Serial.println("before");
+    Serial.println(sensorValue);
+    dimTo(300);
+    Serial.println("after");
+    Serial.println(sensorValue);
     i++;
   }
-  // step one revolution in the other direction:
-  Serial.println("counterclockwise");
-  myStepper.step(-stepsPerRevolution );
-  delay(2000);
-
-*/
+  
 
 }
 
@@ -242,28 +244,43 @@ int readSensorPin(){
   return analogRead(sensorPin);
 }
 
+
 // METHODS FOR DIMMING AND BRIGHTEN
 void brightenTo(int desired) {
   int preSensorValue = readSensorPin();
 
   // curtains up
-  myStepper.step(10*stepsPerRevolution);
+  motorStep(600);
   
   int postSensorValue = readSensorPin();
 
   // Only runs if the curtains has an effect
-  if ((postSensorValue - preSensorValue) > 30 ) {
-    while (sensorValue < desired && stepCount < [upperbound]) {
+  if ((postSensorValue - preSensorValue)>1) { // Virker ikke optimalt
+    while (sensorValue < desired && stepCount+stepsPerRevolution < curtainUpperbound) {
+      motorStep(stepsPerRevolution);
       updateSensor();
-      myStepper.step(10*stepsPerRevolution);
     }
   }
   
   while (sensorValue < desired && lightValue < 255) {
+    changeLight(lightValue+5);
+    delay(50);
     updateSensor();
-    changeLight(lightValue+10)
   }
+  
 }
+
+void dimTo(int desired) {
+  while (sensorValue > desired && lightValue > 4) {
+    changeLight(lightValue-5);
+    delay(50);
+    updateSensor();
+  }
+  while (sensorValue > desired && stepCount-stepsPerRevolution > curtainLowerbound) {
+    motorStep(-stepsPerRevolution);
+    updateSensor();
+  }
+} 
 
 // Run this
 void updateSensor() {
@@ -274,4 +291,34 @@ void updateSensor() {
 void changeLight(int value) {
   analogWrite(ledPin, value);
   lightValue = value;
+}
+
+// Run this
+void motorStep(int value) {
+  if(stepCount+value < curtainUpperbound) {
+    myStepper.step(value);
+    stepCount+=value;
+  }
+
+  writeToEEPROM(String(stepCount));
+}
+
+void writeToEEPROM(String str) {
+  int len = String(str).length();
+  EEPROM.write(0, len);
+
+  for (int i = 0; i < len ; i++) {
+    EEPROM.write(0+1+i, str[i]);
+  }
+}
+
+String readFromEEPROM() {
+  int len = EEPROM.read(0);
+
+  char data[len +1];
+  for (int i = 0 ; i < len ; i++) {
+    data[i] = EEPROM.read(0 + 1 + i);
+  }
+  data[len] = '\0';
+  return String(data);
 }
