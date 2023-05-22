@@ -124,7 +124,6 @@ void loop() {
     sendSensorToMQTT();
     previousTime = currentTime;  // Update the previous execution time
   }
-  
 }
 
 void setLightning(int value) {
@@ -190,7 +189,7 @@ void updateSensor() {
 void changeLight(int value) {
   analogWrite(ledPin, value);
   lightValue = value;
-  publishToMQTT(STEPPER_motor_topic, String(lightValue));
+  publishToMQTT(LIGHT_level_topic, String(lightValue));
 }
 
 // Positiv step = op | Negativ step = ned
