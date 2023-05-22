@@ -1,18 +1,25 @@
 //#include <SPI.h>
+//#include <WiFiUdp.h>
 #include <WiFiNINA.h>
-#include <WiFiUdp.h>
 #include <Stepper.h>
+#include <EEPROM.h>
+#include <ArduinoMqttClient.h>
+
 
 
 //the initial wifi status
-int status = WL_IDLE_STATUS;
+//int status = WL_IDLE_STATUS;
 
 //WiFiUDP object used for the communication
-WiFiUDP Udp;
+//WiFiUDP Udp;
 
-//your network name (SSID) and password (WPA)
-char ssid[] = "F23PRF";            
-char pass[] = "15FEB2023"; 
+//Wifi name and password
+char ssid[] = "iPhone";    // your network SSID (name)
+char pass[] = "netdel100";    // your network password (use for WPA, or use as key for WEP)
+
+//Wifi client
+WiFiClient wifiClient;
+MqttClient mqttClient(wifiClient);
 
 //local port to listen on
 int localPort = 3002;                               
@@ -32,212 +39,198 @@ const int stepsPerRevolution = 300;
 
 Stepper myStepper = Stepper(stepsPerRevolution, 8, 9, 10, 11);
 
+// MQTT 
+const char broker[] = "broker.hivemq.com"; 
+int        port     = 1883;
 
+const char LDR_sensor_topic[] = "PRF/2023/LDR";
+const char STEPPER_motor_topic[] = "PRF/2023/STEPPER";
+const char LIGHT_level_topic[] = "PRF/2023/LIGHT";
+
+const char COMMANDS_topic[] = "PRF/2023/COMMANDS";
 
 // LED pins
 const int ledPin = 6;
-const int ledPin2 = 7;
 
 int i = 0;
 
 // LDR sensor pin
-
 const int sensorPin = A0;
-
 int sensorValue = 0;
+
+int lightValue = 0;
 
 String latestCommand = "";
 
-int stepCount = 0;         // number of steps the motor has taken
-
-
+int stepCount = 0; // number of steps the motor has taken
+int curtainUpperbound = 9000;
+int curtainLowerbound = 0;
 
 void setup() {
-  // put your setup code here, to run once:
-
-
-  
   pinMode(ledPin, OUTPUT);
-  pinMode(ledPin2, OUTPUT);
-  
- // pinMode(STEPPER_PIN_1, OUTPUT);
-//  pinMode(STEPPER_PIN_2, OUTPUT);
-  // pinMode(STEPPER_PIN_3, OUTPUT);
-  // pinMode(STEPPER_PIN_4, OUTPUT);
 
-    myStepper.setSpeed(60);
+  myStepper.setSpeed(100);
 
+  stepCount = readFromEEPROM().toInt();
 
   Serial.begin(9600);
-/*
-  while (!Serial);
 
-  //check the WiFi module
-  if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed!");
-    
-    //don't continue
+  //Wifi network:
+  Serial.println(ssid);
+  while (WiFi.begin(ssid, pass) != WL_CONNECTED) {
+    delay(5000);
+  }
+  Serial.println("Network connection established");
+
+
+  if (!mqttClient.connect(broker, port)) {
+    Serial.print("MQTT connection failed! Error code = ");
+    Serial.println(mqttClient.connectError());
     while (true);
   }
-
-  //attempt to connect to WiFi network
-  while (status != WL_CONNECTED) {
-
-    //connect to WPA/WPA2 network
-    Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
-    status = WiFi.begin(ssid, pass);
-
-    //wait 10 seconds for connection
-    delay(10000);
-  }
+  Serial.println("MQTT connection established");
   
-  Serial.println("Connected to WiFi");
-  
-  //if you get a connection, report back via serial:
-  Udp.begin(localPort);
+  //Subscribe to MQTT topic and set the callback function for handling messages
+  mqttClient.subscribe(COMMANDS_topic);
+  mqttClient.onMessage(onMqttMessage);
 
-
-
- */
+  // Check LDR sensor
+  updateSensor();
 }
 
+void onMqttMessage(int messageSize) {
+  String message;
+  int value;
+
+  Serial.print("Message Content: ");
+  while (mqttClient.available()) {
+    message += (char)mqttClient.read();
+  }
+  value = message.toInt();
+  setLightning(value);
+}
+
+int previousTime = 0;  // To store execution time
+int interval = 10000; 
 
 void loop() {
-
-  int sensorVal = readSensorPin();
-  Serial.println(sensorVal);
-
-  //analogWrite(ledPin, 255);
-
-  //setLightning("total_darkness");
-  // put your main code here, to run repeatedly:åå
- // latestCommand = listenForUDPMessage();
-
-
-  // setLightning(latestCommand);
-
-/*
-
-  sensorValue = analogRead(sensorPin);
-  Serial.println(sensorValue);
-
-
-  analogWrite(ledPin, 0);
-  analogWrite(ledPin2, 0);
-
-
-  Serial.println("OFF");
-  delay(2000);
-
-  analogWrite(ledPin, 5);
-  Serial.println("ON 160 ");
-
-  delay(2000);
-
-  analogWrite(ledPin, 255);
-  Serial.println("ON 255");
-  delay(2000);
-  */
- 
+  //Pools the MQTT broker and avoids disconnecting
+  mqttClient.poll();
   
+  int currentTime = millis();  // Get the current time
 
-/* if(i < 4){
-    Serial.println("clockwise");
-    myStepper.step(stepsPerRevolution );
-    delay(2000);
-    i++;
-  }
-  // step one revolution in the other direction:
-  Serial.println("counterclockwise");
-  myStepper.step(-stepsPerRevolution );
-  delay(2000);
-
-*/
-
-}
-
-
-
-
-//listens for incoming UDP messages
-/*
-String listenForUDPMessage() {
-
-  //on package received
-  int packetSize = Udp.parsePacket();
-  if (packetSize) {
-    
-    //buffer for incoming packages
-    char packetBuffer[256]; 
-  
-    //read the packet into packetBufffer
-    int msgLength = Udp.read(packetBuffer, 255);
-    if (msgLength > 0) {
-      packetBuffer[msgLength] = NULL;
-    }
-
-    //print message from packet
-    Serial.print("\nReceived message: ");
-    Serial.println(packetBuffer);
-
-    //convert message value to int
-    String messageValueAsString = String(packetBuffer);
-    return messageValueAsString
-    //set LED to received value
-  //   setLEDTo(messageValueAsString);
-
-    //send acknowledgement message
-    //sendUDPMessage(Udp.remoteIP(), Udp.remotePort(), "ARDUINO: message was received");
+  // Check if the desired interval has passed
+  if (currentTime - previousTime >= interval) {
+    sendSensorToMQTT();
+    previousTime = currentTime;  // Update the previous execution time
   }
   
 }
-void sendUDPMessage(IPAddress remoteIPAddress, int remoteport, String message) {
-  Serial.println("sendUDPMessageToServer");
 
-  //get message string length (+1 to store a null value indicating the end of the message)
-  int messageLength = message.length() + 1;
+void setLightning(int value) {
   
-  //create char array 
-  char messageBuffer[messageLength];
-
-  //copy string message to char array
-  message.toCharArray(messageBuffer, messageLength);
-
-  //send the packet to the server
-  Udp.beginPacket(remoteIPAddress, remoteport);
-  Udp.write(messageBuffer);
-  Udp.endPacket(); 
-}
-*/
-
-void setLightning(String command) {
+  updateSensor();
   
-  int sensorVal = readSensorPin();
-  Serial.println(sensorVal);
-  
-  if(command == "total_darkness"){
-    
-    analogWrite(ledPin, 0);
-    //shutdown light
-
-  } else if (command == "darkness"){
-    analogWrite(ledPin, 5);
-
-  } else if (command == "medium")
-  {
-    analogWrite(ledPin, 75);
-
-  } else if (command == "bright") {
-    analogWrite(ledPin, 150);
-
-  } else if (command == "very_bright"){
-    analogWrite(ledPin, 255);
-
+  if (sensorValue > value) {
+    dimTo(value);
+  } else {
+    brightenTo(value);
   }
 }
 
 
 int readSensorPin(){
   return analogRead(sensorPin);
+}
+
+
+// METHODS FOR DIMMING AND BRIGHTEN
+void brightenTo(int desired) {
+  //int preSensorValue = readSensorPin();
+
+  // curtains up
+  //motorStep(600);
+  
+  //int postSensorValue = readSensorPin();
+
+  // Only runs if the curtains has an effect
+  //if ((postSensorValue - preSensorValue)>1) { // Virker ikke optimalt
+    while (sensorValue < desired && stepCount+stepsPerRevolution < curtainUpperbound) {
+      motorStep(stepsPerRevolution);
+      updateSensor();
+    }
+  //}
+  
+  while (sensorValue < desired && lightValue < 255) {
+    changeLight(lightValue+5);
+    delay(50);
+    updateSensor();
+  }
+  
+}
+
+void dimTo(int desired) {
+  while (sensorValue > desired && lightValue > 4) {
+    changeLight(lightValue-5);
+    delay(50);
+    updateSensor();
+  }
+  while (sensorValue > desired && stepCount-stepsPerRevolution > curtainLowerbound) {
+    motorStep(-stepsPerRevolution);
+    updateSensor();
+  }
+} 
+
+// Run this
+void updateSensor() {
+  sensorValue = analogRead(sensorPin);
+}
+
+// Alle steder hvor lys ændres, skal være her
+void changeLight(int value) {
+  analogWrite(ledPin, value);
+  lightValue = value;
+  publishToMQTT(STEPPER_motor_topic, String(lightValue));
+}
+
+// Positiv step = op | Negativ step = ned
+void motorStep(int value) {
+  if(stepCount+value < curtainUpperbound) {
+    myStepper.step(value);
+    stepCount+=value;
+  }
+  publishToMQTT(STEPPER_motor_topic ,String(stepCount));
+  writeToEEPROM(String(stepCount));
+}
+
+void writeToEEPROM(String str) {
+  int len = String(str).length();
+  EEPROM.write(0, len);
+
+  for (int i = 0; i < len ; i++) {
+    EEPROM.write(0+1+i, str[i]);
+  }
+}
+
+String readFromEEPROM() {
+  int len = EEPROM.read(0);
+
+  char data[len +1];
+  for (int i = 0 ; i < len ; i++) {
+    data[i] = EEPROM.read(0 + 1 + i);
+  }
+  data[len] = '\0';
+  return String(data);
+}
+
+void publishToMQTT(String topic, String message) {
+  mqttClient.beginMessage(topic);
+  mqttClient.print(String(message));
+  mqttClient.endMessage();
+}
+
+void sendSensorToMQTT() {
+  mqttClient.beginMessage("PRF/2023/LDR");
+  mqttClient.print(sensorValue);
+  mqttClient.endMessage();
 }
