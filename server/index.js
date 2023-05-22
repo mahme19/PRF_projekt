@@ -9,6 +9,12 @@ app.use(express.static(path.join(__dirname, '')));
 var currentPotValue = 0;
 var currentLEDValue = 0;
 
+var currentLightLevelValue = 0;
+var currentLDRSensorValue = 0;
+var currentStepperValue = 0;
+
+
+
 //start server
 server.listen(3000, function () {
     console.log("Server listening on port: 3000\n");
@@ -43,6 +49,7 @@ console.log("Server IP-address: " + address + "\n");
 
 
 // ------------------------------ setup UDP (user datagram protocol) ------------------------------ 
+/*
 var UPD = require("dgram");
 var UDPsocket = UPD.createSocket('udp4');
 
@@ -92,11 +99,91 @@ function sendUDPMessage(receiverIPAddress, receiverPort, message) {
     });
 }
 
+*/
 
+//---------------------------------SETUP MQTT--------------------
+var mqtt = require('mqtt')
+require('dotenv').config() 
+
+
+
+var clientId = 'mqttjs_' + Math.random().toString(8).substr(2, 4) 
+
+const host = 'broker.hivemq.com';
+
+var LDR_SENSOR = 'PRF/2023/LDR'
+var STEPPER_MOTOR = 'PRF/2023/STEPPER'
+var LIGHT_LEVEL = 'PRF/2023/LIGHT'
+
+var commands = 'PRF/2023/COMMANDS'
+
+
+const connectUrl = `mqtt://${host}`
+var client = mqtt.connect(connectUrl, {
+  clientId,
+  clean: true,
+  connectTimeout: 4000,
+  reconnectPeriod: 1000,
+  resubscribe: true
+});
+
+client.on('connect', function () {
+    
+    console.log('client connected:' + clientId)
+    client.subscribe(LDR_SENSOR);
+    client.subscribe(STEPPER_MOTOR);
+    client.subscribe(LIGHT_LEVEL);
+});
+
+
+client.on('message', function (topic, message, packet) {
+    
+    if(topic == 'PRF/2023/LDR'){
+        console.log(topic+"light: "+message.toString());
+        currentLDRSensorValue = message.toString();
+        EmitLDRSensorValue();
+    } else if (topic == STEPPER_MOTOR){
+        currentStepperValue = message.toString();
+        EmitStepperValue();
+    } else if (topic ==  LIGHT_LEVEL){
+        currentLightLevelValue = message.toString();
+        EmitLEDLevelValue();
+    }
+ 
+});
+
+
+// Needs to subscribe to topics related to sensorpin/ldr/light_level
+
+
+// needs to publish input from users to MQTT and the arudino needs to subscribe to this data
+
+
+client.on("error", function(err) { 
+    console.log("Error: " + err) 
+    if(err.code == "ENOTFOUND") { 
+        console.log("Network error, make sure you have an active internet connection") 
+    } 
+}); 
+
+client.on("close", function() { 
+    console.log("Connection closed by client") 
+}); 
+
+client.on("reconnect", function() { 
+    console.log("Client trying a reconnection") 
+}); 
+
+client.on("offline", function() { 
+    console.log("Client is currently offline") 
+});  
 
 
 // ------------------------------ setup Socket.IO ------------------------------ 
 var io = require('socket.io')(server);
+
+
+
 
 //on new client connection
 io.on('connection', function(IOsocket) {
@@ -111,17 +198,24 @@ io.on('connection', function(IOsocket) {
     IOsocket.on('UpdateCurrentLEDValue', function (data) {
         console.log("Current LED Value received from client: " + data + "\n");
         currentLEDValue = data;
+        client.publish(commands, currentLEDValue);
 
-        io.emit('CurrentLEDValue', currentLEDValue);
-
-        //If arduino, send LED value with UDP
-        if (arduinoIPAddress != null && arduinoPort != null) {
-            sendUDPMessage(arduinoIPAddress, arduinoPort, currentLEDValue)
-        }
     });
 });
 
 //emit "CurrentPotentiometerValue"
 function EmitPotValue() {
     io.emit('CurrentPotentiometerValue', currentPotValue);
+}
+
+function EmitLDRSensorValue() {
+    io.emit('CurrentSensorValue', currentLDRSensorValue);
+}
+
+function EmitStepperValue() {
+    io.emit('CurrentStepperValue', currentStepperValue);
+}
+
+function EmitLEDLevelValue() {
+    io.emit('CurrentLEDLevelValue', currentLightLevelValue);
 }
