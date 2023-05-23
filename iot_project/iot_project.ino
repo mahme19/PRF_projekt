@@ -1,17 +1,7 @@
-//#include <SPI.h>
-//#include <WiFiUdp.h>
 #include <WiFiNINA.h>
 #include <Stepper.h>
 #include <EEPROM.h>
 #include <ArduinoMqttClient.h>
-
-
-
-//the initial wifi status
-//int status = WL_IDLE_STATUS;
-
-//WiFiUDP object used for the communication
-//WiFiUDP Udp;
 
 //Wifi name and password
 char ssid[] = "iPhone";    // your network SSID (name)
@@ -52,15 +42,13 @@ const char COMMANDS_topic[] = "PRF/2023/COMMANDS";
 // LED pins
 const int ledPin = 6;
 
-int i = 0;
-
 // LDR sensor pin
 const int sensorPin = A0;
 int sensorValue = 0;
 
 int ledValue = 0;
 
-String latestCommand = "";
+int desiredAmbient = 450; // medium ambient
 
 int stepCount = 9000; // number of steps the motor has taken
 int curtainUpperbound = 9000;
@@ -113,7 +101,8 @@ void onMqttMessage(int messageSize) {
     message += (char)mqttClient.read();
   }
   value = message.toInt();
-  setLightning(value);
+  desiredAmbient = value;
+  setAmbient(value);
 }
 
 int previousTime = 0;  // To store execution time
@@ -128,12 +117,14 @@ void loop() {
   // Check if the desired interval has passed
   if (currentTime - previousTime >= interval) {
     sendSensorToMQTT();
+    if (abs(desiredAmbient - sensorValue) > 10) {
+      setAmbient(desiredAmbient);
+    }
     previousTime = currentTime;  // Update the previous execution time
   }
 }
 
-void setLightning(int value) {
-
+void setAmbient(int value) {
   updateSensor();
   if (sensorValue > value) {
     dimTo(value);
@@ -164,9 +155,7 @@ void brightenTo(int desired) {
       updateSensor();
     }
   //}
-  Serial.println("should we dim lights?");
   while (sensorValue < desired && ledValue < 255) {
-    Serial.println("YES!");
     changeLED(ledValue+5);
     delay(50);
     updateSensor();
