@@ -102,7 +102,8 @@ function sendUDPMessage(receiverIPAddress, receiverPort, message) {
 */
 
 //---------------------------------SETUP MQTT--------------------
-var mqtt = require('mqtt')
+var mqtt = require('mqtt');
+
 require('dotenv').config() 
 
 
@@ -146,7 +147,9 @@ client.on('message', function (topic, message, packet) {
         currentStepperValue = message.toString();
         EmitStepperValue();
     } else if (topic ==  LIGHT_LEVEL){
+
         currentLightLevelValue = message.toString();
+        console.log(topic+ message.toString());
         EmitLEDLevelValue();
     }
  
@@ -203,10 +206,6 @@ io.on('connection', function(IOsocket) {
     });
 });
 
-//emit "CurrentPotentiometerValue"
-function EmitPotValue() {
-    io.emit('CurrentPotentiometerValue', currentPotValue);
-}
 
 function EmitLDRSensorValue() {
     io.emit('CurrentSensorValue', currentLDRSensorValue);
