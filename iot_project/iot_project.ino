@@ -29,15 +29,15 @@ IPAddress serverIPAddress(192, 168, 110, 214);
 int serverPort = 3001;       
 
 
-#define STEPPER_PIN_1 9
-#define STEPPER_PIN_2 10
-#define STEPPER_PIN_3 11
-#define STEPPER_PIN_4 12
+#define STEPPER_PIN_1 8
+#define STEPPER_PIN_2 9
+#define STEPPER_PIN_3 10
+#define STEPPER_PIN_4 11
 int step_number = 1;
 
 const int stepsPerRevolution = 300;
 
-Stepper myStepper = Stepper(stepsPerRevolution, 8, 9, 10, 11);
+Stepper myStepper = Stepper(stepsPerRevolution, STEPPER_PIN_1, STEPPER_PIN_2, STEPPER_PIN_3, STEPPER_PIN_4);
 
 // MQTT 
 const char broker[] = "broker.hivemq.com"; 
@@ -58,19 +58,25 @@ int i = 0;
 const int sensorPin = A0;
 int sensorValue = 0;
 
-int lightValue = 0;
+int ledValue = 0;
 
 String latestCommand = "";
 
-int stepCount = 0; // number of steps the motor has taken
+int stepCount = 9000; // number of steps the motor has taken
 int curtainUpperbound = 9000;
 int curtainLowerbound = 0;
 
 void setup() {
+
+  pinMode(STEPPER_PIN_1, OUTPUT);
+  pinMode(STEPPER_PIN_2, OUTPUT);
+  pinMode(STEPPER_PIN_3, OUTPUT);
+  pinMode(STEPPER_PIN_4, OUTPUT);
+
   pinMode(ledPin, OUTPUT);
+  analogWrite(ledPin, ledValue);
 
   myStepper.setSpeed(100);
-
   stepCount = readFromEEPROM().toInt();
 
   Serial.begin(9600);
@@ -96,13 +102,13 @@ void setup() {
 
   // Check LDR sensor
   updateSensor();
+
 }
 
 void onMqttMessage(int messageSize) {
   String message;
   int value;
 
-  Serial.print("Message Content: ");
   while (mqttClient.available()) {
     message += (char)mqttClient.read();
   }
@@ -127,9 +133,8 @@ void loop() {
 }
 
 void setLightning(int value) {
-  
+
   updateSensor();
-  
   if (sensorValue > value) {
     dimTo(value);
   } else {
@@ -159,9 +164,10 @@ void brightenTo(int desired) {
       updateSensor();
     }
   //}
-  
-  while (sensorValue < desired && lightValue < 255) {
-    changeLight(lightValue+5);
+  Serial.println("should we dim lights?");
+  while (sensorValue < desired && ledValue < 255) {
+    Serial.println("YES!");
+    changeLED(ledValue+5);
     delay(50);
     updateSensor();
   }
@@ -169,8 +175,9 @@ void brightenTo(int desired) {
 }
 
 void dimTo(int desired) {
-  while (sensorValue > desired && lightValue > 4) {
-    changeLight(lightValue-5);
+
+  while (sensorValue > desired && ledValue > 4) {
+    changeLED(ledValue-5);
     delay(50);
     updateSensor();
   }
@@ -186,10 +193,10 @@ void updateSensor() {
 }
 
 // Alle steder hvor lys ændres, skal være her
-void changeLight(int value) {
+void changeLED(int value) {
   analogWrite(ledPin, value);
-  lightValue = value;
-  publishToMQTT(LIGHT_level_topic, String(lightValue));
+  ledValue = value;
+  publishToMQTT(LIGHT_level_topic, String(ledValue));
 }
 
 // Positiv step = op | Negativ step = ned
@@ -229,6 +236,7 @@ void publishToMQTT(String topic, String message) {
 }
 
 void sendSensorToMQTT() {
+  updateSensor();
   mqttClient.beginMessage("PRF/2023/LDR");
   mqttClient.print(sensorValue);
   mqttClient.endMessage();
