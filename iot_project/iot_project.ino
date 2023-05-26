@@ -150,7 +150,7 @@ void brightenTo(int desired) {
 
   // Only runs if the curtains has an effect
   //if ((postSensorValue - preSensorValue)>1) { // Virker ikke optimalt
-    while (sensorValue < desired && stepCount+stepsPerRevolution < curtainUpperbound) {
+    while (sensorValue < desired && stepCount+stepsPerRevolution <= curtainUpperbound) {
       motorStep(stepsPerRevolution);
       updateSensor();
     }
@@ -170,7 +170,7 @@ void dimTo(int desired) {
     delay(50);
     updateSensor();
   }
-  while (sensorValue > desired && stepCount-stepsPerRevolution > curtainLowerbound) {
+  while (sensorValue > desired && stepCount-stepsPerRevolution >= curtainLowerbound) {
     motorStep(-stepsPerRevolution);
     updateSensor();
   }
