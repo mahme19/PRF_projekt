@@ -6,7 +6,6 @@ var path = require('path');
 app.use(express.static(path.join(__dirname, '')));
 
 //server variables
-var currentPotValue = 0;
 var currentLEDValue = 0;
 
 var currentLightLevelValue = 0;
@@ -104,7 +103,6 @@ function sendUDPMessage(receiverIPAddress, receiverPort, message) {
 //---------------------------------SETUP MQTT--------------------
 var mqtt = require('mqtt');
 
-require('dotenv').config() 
 
 
 
