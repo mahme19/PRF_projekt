@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: d697151960ea72d4a923c49808a06d3a
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - firstPersonCamera: {instanceID: 0}
+  - overheadCamera: {instanceID: 0}
+  - lightTransform: {instanceID: 0}
+  - curtain: {fileID: 2100000, guid: 1b97900032d9641eda65a8e74115f508, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
