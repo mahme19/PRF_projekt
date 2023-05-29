@@ -46,60 +46,6 @@ console.log("Server IP-address: " + address + "\n");
 
 
 
-
-// ------------------------------ setup UDP (user datagram protocol) ------------------------------ 
-/*
-var UPD = require("dgram");
-var UDPsocket = UPD.createSocket('udp4');
-
-//set the port for which to listen for UDP messages on
-UDPsocket.bind(3001);
-
-//store arduino IP info
-var arduinoIPAddress;
-var arduinoPort;
-
-//on error
-UDPsocket.on('error', function (error) {
-    console.error("UDP error: " + error.stack + "\n");
-});
-
-//on begin listening
-UDPsocket.on('listening', function () {
-    var listenAtPort = UDPsocket.address().port;
-    console.log('Server listening for UDP packets at port: ' + listenAtPort + "\n");
-});
-
-//on received message
-UDPsocket.on('message', (msg, senderInfo) => {
-    console.log("Received UDP message: " + msg);
-    console.log("From addr: " + senderInfo.address + ", at port: " + senderInfo.port + "\n");
-
-    currentPotValue = msg.toString();
-
-    arduinoIPAddress = senderInfo.address;
-    arduinoPort = senderInfo.port;
-
-    EmitPotValue();
-
-    //send acknowledgement message
-    //sendUDPMessage(arduinoIPAddress, arduinoPort, "SERVER: The message was received");
-});
-
-//send UDP message
-function sendUDPMessage(receiverIPAddress, receiverPort, message) {
-    var UDPMessage = Buffer.from(message);
-    UDPsocket.send(UDPMessage, receiverPort, receiverIPAddress, function (error) {
-        if (error) {
-            client.close();
-        } else {
-            console.log('UDP message sent: ' + message + "\n");
-        }
-    });
-}
-
-*/
-
 //---------------------------------SETUP MQTT--------------------
 var mqtt = require('mqtt');
 
@@ -137,7 +83,7 @@ client.on('connect', function () {
 
 client.on('message', function (topic, message, packet) {
     
-    if(topic == 'PRF/2023/LDR'){
+    if(topic == LDR_SENSOR){
         console.log(topic+"light: "+message.toString());
         currentLDRSensorValue = message.toString();
         EmitLDRSensorValue();
@@ -216,3 +162,4 @@ function EmitStepperValue() {
 function EmitLEDLevelValue() {
     io.emit('CurrentLEDLevelValue', currentLightLevelValue);
 }
+

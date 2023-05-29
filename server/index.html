@@ -17,8 +17,11 @@
 
 <body>
 
-	<div class="container">
+	<div class="container-sm">
 		
+		
+			<div ><p>Current Brightness in the room:	<output id="brightness"></output></p></div>
+
 		<p>
 			<b>
 				Please specify the desired light level for the room
@@ -107,10 +110,14 @@
 	});
 
 	//On "CurrentPotentiometerValue"
-	socket.on("CurrentPotentiometerValue", function (data) {
+	socket.on("CurrentSensorValue", function (data) {
 		console.log("Current Potentiometer value received from server: " + data);
-		document.getElementById("CurrentPotentiometerValueField").value = data;
+		conversion = data/1023*100;
+		conversion = conversion.toFixed(2)  +"%";
+		document.getElementById("brightness").value = conversion;
 	});
+
+
 
 
 
