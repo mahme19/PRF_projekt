@@ -16,7 +16,7 @@ public class IoT : MonoBehaviour
     public Camera firstPersonCamera;
     public Camera overheadCamera;
 
-    private Light spotlightA;
+    private Light pointLightA;
     public float minIntensity = 0f;
     public float maxIntensity = 15f;
     public float minRange = 1f;
@@ -24,7 +24,7 @@ public class IoT : MonoBehaviour
 
     public float max_Range = 100f;
 
-    Transform spotlightATransform;
+    Transform pointLightATransform;
     public Transform lightTransform;
 
 
@@ -40,22 +40,22 @@ public class IoT : MonoBehaviour
     void Start()
     {
 
-        GameObject SpotLightA = new GameObject("SpotlightA");
-        spotlightATransform = SpotLightA.transform;
+        GameObject PointLightA = new GameObject("pointLightA");
+        pointLightATransform = PointLightA.transform;
 
-        spotlightA = SpotLightA.AddComponent<Light>();
+        pointLightA = PointLightA.AddComponent<Light>();
 
-        spotlightA.type = LightType.Spot;
+        pointLightA.type = LightType.Point;
 
 
-        spotlightA.transform.position = new Vector3(0,10,0);
+        pointLightA.transform.position = new Vector3(0,10,0);
         
-        spotlightA.transform.rotation = Quaternion.Euler(90,0,0);
+        pointLightA.transform.rotation = Quaternion.Euler(90,0,0);
 
-        spotlightA.transform.localScale = new Vector3(10,10,10);
+        pointLightA.transform.localScale = new Vector3(10,10,10);
 
-        spotlightA.intensity = 2;
-        spotlightA.spotAngle = 180f;
+        pointLightA.intensity = 2;
+        pointLightA.spotAngle = 180f;
 
 
         cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -133,7 +133,7 @@ public class IoT : MonoBehaviour
     public void SetRange(float value) {
         float input = Mathf.Clamp01(value / 255f);
         float range = Mathf.Lerp(minRange, max_Range, input);
-        this.spotlightA.range = range;
+        this.pointLightA.range = range;
     }
 
     public void UpdateCurtain(int value) {
@@ -166,7 +166,7 @@ public class IoT : MonoBehaviour
     void Update()
     {
 
-        spotlightATransform.LookAt(lightTransform);
+        pointLightATransform.LookAt(lightTransform);
 
         SetRange(float.Parse(currentLEDLightValue));
 
