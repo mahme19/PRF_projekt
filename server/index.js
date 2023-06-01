@@ -50,8 +50,6 @@ console.log("Server IP-address: " + address + "\n");
 var mqtt = require('mqtt');
 
 
-
-
 var clientId = 'mqttjs_' + Math.random().toString(8).substr(2, 4) 
 
 const host = 'broker.hivemq.com';
