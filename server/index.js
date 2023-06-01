@@ -50,8 +50,6 @@ console.log("Server IP-address: " + address + "\n");
 var mqtt = require('mqtt');
 
 
-
-
 var clientId = 'mqttjs_' + Math.random().toString(8).substr(2, 4) 
 
 const host = 'broker.hivemq.com';
@@ -84,7 +82,7 @@ client.on('connect', function () {
 client.on('message', function (topic, message, packet) {
     
     if(topic == LDR_SENSOR){
-        console.log(topic+"light: "+message.toString());
+        console.log(topic+message.toString());
         currentLDRSensorValue = message.toString();
         EmitLDRSensorValue();
     } else if (topic == STEPPER_MOTOR){
